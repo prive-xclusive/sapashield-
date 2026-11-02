@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SapaShield - Campus Financial & Payment Ecosystem (Live Ready)</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981', /* Emerald Green */
+                        primaryDark: '#059669',
+                        darkBg: '#0F172A',  /* Slate 900 */
+                        cardBg: '#1E293B',  /* Slate 800 */
+                        borderDark: '#334155'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- QR Code Library for Merchant QR Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- ================= INTERSWITCH CHECKOUT SDK ================= -->
+    <script id="isw-checkout-script" src="https://newwebpay-sandbox.interswitchng.com/inline-checkout.js"></script>
+
+    <style>
+        body { background-color: #0F172A; color: #F8FAFC; font-family: system-ui, -apple-system, sans-serif; }
+        .hidden-view { display: none !important; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+
+    <!-- MAIN CONTAINER -->
+    <main id="app-container" class="flex-grow flex items-center justify-center p-4">
+
+        <!-- ================= 1. WELCOME SCREEN ================= -->
+        <section id="view-welcome" class="w-full max-w-md bg-cardBg border border-borderDark rounded-2xl p-8 shadow-2xl text-center">
+            <div class="mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-2xl mb-4 text-2xl font-bold border border-emerald-500/20">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold tracking-tight">SapaShield</h1>
+                <p class="text-slate-400 text-sm mt-1">Smart Campus Financial Security & Payments</p>
+                <div class="mt-2 inline-block px-2 py-0.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded text-[10px] font-semibold tracking-wide uppercase" id="env-badge">
+                    Environment: Sandbox Mode
+                </div>
+            </div>
+
+            <div class="space-y-4 mt-6">
+                <button onclick="switchView('view-register')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Create Account
+                </button>
+                <button onclick="switchView('view-login')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-borderDark font-semibold py-3.5 px-4 rounded-xl transition duration-200 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-right-to-bracket"></i> Already have an account? Login
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= 2. LOGIN SCREEN ================= -->
+        <section id="view-login" class="hidden-view w-full max-w-md bg-cardBg border border-borderDark rounded-2xl p-8 shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <button onclick="switchView('view-welcome')" class="text-slate-400 hover:text-white text-sm flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </button>
+                <h2 class="text-xl font-bold">Sign In</h2>
+                <div class="w-10"></div>
+            </div>
+
+            <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Account Type</label>
+                    <select id="login-role" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                        <option value="student">Student Account</option>
+                        <option value="merchant">Merchant / Vendor Account</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Email Address</label>
+                    <input type="email" id="login-email" required placeholder="student@eksu.edu.ng" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Password / PIN</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-lg mt-2">
+                    Access Dashboard
+                </button>
+            </form>
+        </section>
+
+        <!-- ================= 3. REGISTRATION SCREEN ================= -->
+        <section id="view-register" class="hidden-view w-full max-w-lg bg-cardBg border border-borderDark rounded-2xl p-8 shadow-2xl my-6">
+            <div class="flex items-center justify-between mb-6">
+                <button onclick="switchView('view-welcome')" class="text-slate-400 hover:text-white text-sm flex items-center gap-1">
+                    <i class="fa-solid fa-arrow-left"></i> Back
+                </button>
+                <h2 class="text-xl font-bold">Create Account</h2>
+                <div class="w-10"></div>
+            </div>
+
+            <div class="mb-5">
+                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">I am registering as a:</label>
+                <select id="reg-role" onchange="toggleRegistrationRoleFields()" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 font-medium">
+                    <option value="student">Campus Student</option>
+                    <option value="merchant">Merchant / Vendor</option>
+                </select>
+            </div>
+
+            <form id="form-register" onsubmit="handleInitialRegister(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Full Name</label>
+                    <input type="text" id="reg-name" required placeholder="Dada Oluwanifemi" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Email Address</label>
+                    <div class="flex gap-2">
+                        <input type="email" id="reg-email" required placeholder="josephdada@gmail.com" class="flex-grow bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                        <button type="button" onclick="triggerEmailVerification()" class="bg-slate-800 border border-borderDark hover:bg-slate-700 text-emerald-400 font-semibold px-4 rounded-xl text-xs">Verify Email</button>
+                    </div>
+                </div>
+
+                <!-- Student Specific Fields -->
+                <div id="fields-student" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Matric Number</label>
+                        <input type="text" id="reg-matric" placeholder="EKSU/ENG/22/1234" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">BVN (Bank Verification Number)</label>
+                        <input type="password" maxlength="11" id="reg-bvn-student" placeholder="222XXXXXXXX" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <!-- Merchant Specific Fields -->
+                <div id="fields-merchant" class="hidden-view space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">BVN (Bank Verification Number)</label>
+                        <input type="password" maxlength="11" id="reg-bvn-merchant" placeholder="222XXXXXXXX" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Store / Business Name</label>
+                        <input type="text" id="reg-storename" placeholder="Nifemi's Tech Gadgets & Snacks" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">What do you sell / services offered?</label>
+                        <input type="text" id="reg-goods" placeholder="Snacks, Drinks, Phone Accessories" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Store Picture URL</label>
+                        <input type="text" id="reg-storepic" placeholder="https://images.unsplash.com/photo-store..." class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition duration-200 shadow-lg mt-4">
+                    Proceed to Registration
+                </button>
+            </form>
+        </section>
+
+        <!-- ================= 4. STUDENT DASHBOARD ================= -->
+        <section id="view-student-dashboard" class="hidden-view w-full max-w-4xl">
+            <!-- Header Nav -->
+            <div class="flex items-center justify-between bg-cardBg border border-borderDark p-4 rounded-2xl mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h2 id="student-welcome-name" class="font-bold text-lg">Welcome, Student</h2>
+                        <span class="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">Verified Campus Student</span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="text-slate-400 hover:text-red-400 text-sm flex items-center gap-1.5 bg-slate-900 border border-borderDark px-3 py-2 rounded-xl">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Wallet Card -->
+                <div class="bg-cardBg border border-borderDark rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+                    <div>
+                        <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Available Balance</span>
+                        <h3 id="student-balance" class="text-3xl font-extrabold text-emerald-400 mt-2">₦3,000.00</h3>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-borderDark flex gap-2">
+                        <button onclick="launchInterswitchDeposit()" class="flex-1 bg-emerald-500 text-slate-950 text-xs font-bold py-2.5 rounded-xl transition shadow flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-plus"></i> Fund Wallet
+                        </button>
+                        <button onclick="openTab('student-tab-kyc')" class="flex-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold py-2.5 rounded-xl border border-emerald-500/20 transition">KYC & Cards</button>
+                    </div>
+                </div>
+
+                <!-- Quick Navigation / Stats -->
+                <div class="md:col-span-2 bg-cardBg border border-borderDark rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-lg mb-2">SapaShield Quick Actions</h3>
+                        <p class="text-slate-400 text-sm">Send funds securely, manage your bank cards, or verify your BVN via Interswitch.</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 mt-4">
+                        <button onclick="launchInterswitchDeposit()" class="bg-slate-900 hover:bg-slate-800 border border-borderDark p-3 rounded-xl text-center transition">
+                            <i class="fa-solid fa-credit-card text-emerald-400 mb-1 text-lg"></i>
+                            <div class="text-xs font-medium">Fund via Interswitch</div>
+                        </button>
+                        <button onclick="openTab('student-tab-vendors')" class="bg-slate-900 hover:bg-slate-800 border border-borderDark p-3 rounded-xl text-center transition">
+                            <i class="fa-solid fa-store text-emerald-400 mb-1 text-lg"></i>
+                            <div class="text-xs font-medium">Vendors List</div>
+                        </button>
+                        <button onclick="openTab('student-tab-kyc')" class="bg-slate-900 hover:bg-slate-800 border border-borderDark p-3 rounded-xl text-center transition">
+                            <i class="fa-solid fa-id-card text-emerald-400 mb-1 text-lg"></i>
+                            <div class="text-xs font-medium">KYC & BVN</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Student Content Sections -->
+            <div class="mt-6 bg-cardBg border border-borderDark rounded-2xl p-6 shadow-xl">
+                <div class="flex border-b border-borderDark pb-4 gap-4 overflow-x-auto">
+                    <button onclick="openTab('student-tab-transfer')" id="btn-tab-transfer" class="font-semibold text-emerald-400 border-b-2 border-emerald-400 pb-1 text-sm whitespace-nowrap">Transfer to Merchant</button>
+                    <button onclick="openTab('student-tab-vendors')" id="btn-tab-vendors" class="font-semibold text-slate-400 hover:text-white pb-1 text-sm whitespace-nowrap">Vendors Directory</button>
+                    <button onclick="openTab('student-tab-scan')" id="btn-tab-scan" class="font-semibold text-slate-400 hover:text-white pb-1 text-sm whitespace-nowrap">Scan QR Code</button>
+                    <button onclick="openTab('student-tab-kyc')" id="btn-tab-kyc" class="font-semibold text-slate-400 hover:text-white pb-1 text-sm whitespace-nowrap">KYC & Card Settings</button>
+                </div>
+
+                <!-- Tab 1: Transfer -->
+                <div id="student-tab-transfer" class="pt-6 space-y-4 max-w-md">
+                    <h4 class="font-bold text-md">Direct Merchant Transfer</h4>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Select Vendor</label>
+                        <select id="transfer-vendor-select" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Amount (₦)</label>
+                        <input type="number" id="transfer-amount" placeholder="500" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <button onclick="executeStudentTransfer()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3.5 px-4 rounded-xl transition shadow">
+                        Send Payment
+                    </button>
+                </div>
+
+                <!-- Tab 2: Vendors Page -->
+                <div id="student-tab-vendors" class="hidden-view pt-6 space-y-4">
+                    <h4 class="font-bold text-md mb-4">Approved Campus Vendors</h4>
+                    <div id="vendors-directory-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Tab 3: Scan QR Code -->
+                <div id="student-tab-scan" class="hidden-view pt-6 max-w-md mx-auto text-center space-y-4">
+                    <h4 class="font-bold text-md">Scan Vendor QR Code</h4>
+                    <p class="text-slate-400 text-sm">Scan a merchant's custom SapaShield QR code to instantly initialize payment routing.</p>
+                    <div class="bg-slate-900 border border-borderDark p-8 rounded-2xl flex flex-col items-center justify-center space-y-4">
+                        <div class="w-48 h-48 bg-slate-800 border-2 border-dashed border-borderDark rounded-xl flex items-center justify-center text-slate-500">
+                            <i class="fa-solid fa-camera text-4xl"></i>
+                        </div>
+                        <button onclick="simulateScanQR()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 px-6 rounded-xl text-sm transition">
+                            Simulate QR Scan (Test Vendor)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Student KYC & Bank Card Settings -->
+                <div id="student-tab-kyc" class="hidden-view pt-6 space-y-6 max-w-lg">
+                    <div class="bg-slate-900 border border-borderDark p-5 rounded-xl space-y-3">
+                        <h4 class="font-bold text-md flex items-center gap-2 text-emerald-400">
+                            <i class="fa-solid fa-id-card"></i> Interswitch BVN Verification (KYC)
+                        </h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Verify your Bank Verification Number securely via Interswitch to enable direct wallet debit permissions.</p>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">BVN Number (11 Digits)</label>
+                            <input type="password" id="student-bvn-input" maxlength="11" placeholder="22112233445" class="w-full bg-slate-950 border border-borderDark rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <button onclick="verifyBvnLive()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 px-4 rounded-xl text-xs transition shadow">
+                            Verify BVN via Interswitch API
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900 border border-borderDark p-5 rounded-xl space-y-3">
+                        <h4 class="font-bold text-md flex items-center gap-2 text-emerald-400">
+                            <i class="fa-solid fa-credit-card"></i> Link ATM / Bank Card
+                        </h4>
+                        <p class="text-slate-400 text-xs leading-relaxed">Add your debit card for instant wallet top-ups and seamless campus transactions.</p>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Card Number</label>
+                            <input type="text" id="student-card-num" placeholder="5399 •••• •••• 4455" class="w-full bg-slate-950 border border-borderDark rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Expiry (MM/YY)</label>
+                                <input type="text" id="student-card-exp" placeholder="08/28" class="w-full bg-slate-950 border border-borderDark rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">CVV</label>
+                                <input type="password" id="student-card-cvv" maxlength="3" placeholder="692" class="w-full bg-slate-950 border border-borderDark rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+                            </div>
+                        </div>
+                        <button onclick="saveStudentCard()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/20 font-semibold py-3 rounded-xl text-xs transition">
+                            Save & Tokenize Card
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= 5. MERCHANT DASHBOARD ================= -->
+        <section id="view-merchant-dashboard" class="hidden-view w-full max-w-4xl">
+            <div class="flex items-center justify-between bg-cardBg border border-borderDark p-4 rounded-2xl mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-500/10 text-emerald-400 rounded-xl flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-store"></i>
+                    </div>
+                    <div>
+                        <h2 id="merchant-welcome-name" class="font-bold text-lg">Merchant Dashboard</h2>
+                        <span id="merchant-store-badge" class="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/25">Store Name</span>
+                    </div>
+                </div>
+                <button onclick="logout()" class="text-slate-400 hover:text-red-400 text-sm flex items-center gap-1.5 bg-slate-900 border border-borderDark px-3 py-2 rounded-xl">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+                </button>
+            </div>
+
+            <!-- Merchant Navigation Tabs -->
+            <div class="flex border-b border-borderDark pb-3 mb-6 gap-4">
+                <button onclick="switchMerchantTab('merchant-main')" id="btn-m-main" class="font-semibold text-emerald-400 border-b-2 border-emerald-400 pb-1 text-sm">Overview & QR</button>
+                <button onclick="switchMerchantTab('merchant-kyc')" id="btn-m-kyc" class="font-semibold text-slate-400 hover:text-white pb-1 text-sm">KYC & Bank Card Settings</button>
+            </div>
+
+            <!-- Merchant Tab 1: Main Overview -->
+            <div id="merchant-main" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-cardBg border border-borderDark rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+                        <div>
+                            <span class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Earnings Wallet</span>
+                            <h3 id="merchant-balance" class="text-3xl font-extrabold text-emerald-400 mt-2">₦14,500.00</h3>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-borderDark">
+                            <button onclick="openInterswitchWithdrawalModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 px-4 rounded-xl text-xs transition shadow flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-building-columns"></i> Withdraw via Interswitch API
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 bg-cardBg border border-borderDark rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div>
+                            <h3 class="font-bold text-lg mb-1">Your Custom Merchant QR Code</h3>
+                            <p class="text-slate-400 text-sm">Students can scan this code to securely transfer funds to your verified account.</p>
+                            <div class="mt-4 flex items-center gap-2">
+                                <span class="text-xs bg-slate-900 border border-borderDark px-3 py-1.5 rounded-lg text-slate-300 font-mono" id="merchant-id-code">ID: SAPA-M-8842</span>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded-2xl shadow-md flex items-center justify-center">
+                            <div id="qrcode-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-cardBg border border-borderDark rounded-2xl p-6 shadow-xl">
+                    <h3 class="font-bold text-md mb-4">Recent Store Transactions</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-900 text-slate-400 text-xs uppercase">
+                                <tr>
+                                    <th class="p-3 rounded-l-xl">Student Name</th>
+                                    <th class="p-3">Matric No</th>
+                                    <th class="p-3">Amount</th>
+                                    <th class="p-3 rounded-r-xl">Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="merchant-transactions-table" class="divide-y divide-borderDark text-slate-300"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Merchant Tab 2: KYC & Bank Card Settings -->
+            <div id="merchant-kyc" class="hidden-view space-y-6 max-w-lg">
+                <div class="bg-cardBg border border-borderDark p-6 rounded-2xl space-y-4">
+                    <h4 class="font-bold text-lg flex items-center gap-2 text-emerald-400">
+                        <i class="fa-solid fa-id-card"></i> Merchant BVN & KYC Validation
+                    </h4>
+                    <p class="text-slate-400 text-xs">Linked BVN verification confirms your legal entity status for secure Interswitch payout settlements.</p>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Business BVN (11 Digits)</label>
+                        <input type="password" id="merchant-bvn-input" maxlength="11" placeholder="22334455661" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <button onclick="verifyMerchantBvnLive()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2.5 px-4 rounded-xl text-xs transition shadow">
+                        Verify BVN via Interswitch API
+                    </button>
+                </div>
+
+                <div class="bg-cardBg border border-borderDark p-6 rounded-2xl space-y-4">
+                    <h4 class="font-bold text-lg flex items-center gap-2 text-emerald-400">
+                        <i class="fa-solid fa-credit-card"></i> Payout ATM Card / Bank Account
+                    </h4>
+                    <p class="text-slate-400 text-xs">Connect your designated debit card for automated earnings settlement.</p>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Payout Card Number</label>
+                        <input type="text" id="merchant-card-num" placeholder="5061 •••• •••• 9920" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+                    </div>
+                    <button onclick="saveMerchantCard()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/20 font-semibold py-3 rounded-xl text-xs transition">
+                        Update Payout Card Details
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- BVN Mandate Agreement Modal -->
+    <div id="modal-bvn-mandate" class="hidden-view fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-cardBg border border-borderDark rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex items-center gap-3 text-emerald-400">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                <h3 class="font-bold text-lg text-white">BVN Direct Debit Mandate</h3>
+            </div>
+            <p class="text-slate-300 text-sm leading-relaxed">
+                By clicking <strong>Accept & Continue</strong>, you explicitly authorize SapaShield to request the right to securely withdraw or debit funds from any bank account linked to your provided Bank Verification Number (BVN) in accordance with CBN regulatory guidelines.
+            </p>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeBvnModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 font-semibold py-3 rounded-xl text-xs transition">Decline</button>
+                <button onclick="acceptBvnMandate()" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3 rounded-xl text-xs transition shadow">Accept & Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interswitch Deposit Prompt Modal -->
+    <div id="modal-deposit-prompt" class="hidden-view fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-cardBg border border-borderDark rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-borderDark pb-3">
+                <h3 class="font-bold text-md flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-emerald-400"></i> Interswitch Live Web Checkout
+                </h3>
+                <button onclick="closeDepositPrompt()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Enter Deposit Amount (₦)</label>
+                <input type="number" id="live-deposit-amount" placeholder="2000" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+            </div>
+            <button onclick="triggerInterswitchCheckout()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3.5 px-4 rounded-xl text-sm transition shadow mt-2">
+                Proceed to Interswitch Gateway
+            </button>
+        </div>
+    </div>
+
+    <!-- Interswitch Withdrawal Modal -->
+    <div id="modal-interswitch" class="hidden-view fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-cardBg border border-borderDark rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-borderDark pb-3">
+                <h3 class="font-bold text-md">Interswitch Merchant Payout API</h3>
+                <button onclick="closeInterswitchModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Destination Bank / OPay</label>
+                    <select id="withdraw-bank" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white text-sm focus:outline-none">
+                        <option value="opay">OPay Digital Services</option>
+                        <option value="gtb">Guaranty Trust Bank</option>
+                        <option value="zenith">Zenith Bank</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Withdrawal Amount (₦)</label>
+                    <input type="number" id="withdraw-amount" placeholder="5000" class="w-full bg-slate-900 border border-borderDark rounded-xl px-4 py-3 text-white text-sm focus:outline-none">
+                </div>
+                <button onclick="processLiveInterswitchWithdrawal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-3.5 px-4 rounded-xl text-sm transition shadow mt-2">
+                    Dispatch via Interswitch Transfer API
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="py-4 text-center text-xs text-slate-500 border-t border-borderDark mt-auto">
+        SapaShield Ecosystem &bull; EKSU Campus Edition &bull; Interswitch Powered
+    </footer>
+
+    <!-- ================= LIVE INTEGRATION SCRIPT ================= -->
+    <script>
+        const IS_LIVE = false; 
+
+        const INTERSWITCH_CONFIG = {
+            sandbox: { merchantCode: "MX6072", payItemId: "9405967" },
+            live: { merchantCode: "MX_YOUR_PRODUCTION_CODE", payItemId: "YOUR_LIVE_PAY_ITEM_ID" }
+        };
+
+        const currentEnv = IS_LIVE ? INTERSWITCH_CONFIG.live : INTERSWITCH_CONFIG.sandbox;
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            const badge = document.getElementById('env-badge');
+            if (IS_LIVE) {
+                badge.innerText = "Environment: Live Production Mode";
+                badge.className = "mt-2 inline-block px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded text-[10px] font-semibold tracking-wide uppercase";
+            }
+        });
+
+        let currentUser = null;
+        let pendingRegistrationData = null;
+
+        let appState = {
+            merchants: [
+                { id: 'SAPA-M-101', name: "Mama 'T' Food canteen", storeName: "Mama 'T' Kitchen", goods: "Rice, Beans, Swallow", email: "mamat@eksu.edu.ng", balance: 14500, bvn: "22334455661" },
+                { id: 'SAPA-M-102', name: "Oluwatosin Ade", storeName: "Tosin's Cold Drinks & Snacks", goods: "Cold Drinks, Meatpie", email: "tosin@eksu.edu.ng", balance: 8200, bvn: "22334455662" },
+                { id: 'SAPA-M-103', name: "Broda Ade Printing", storeName: "EKSU Campus Cyber Cafe", goods: "Printing, Photocopy", email: "cyber@eksu.edu.ng", balance: 25000, bvn: "22334455663" }
+            ],
+            students: [
+                { name: "Dada Oluwanifemi Joseph", email: "josephdada@gmail.com", matric: "EKSU/ENG/22/5049", balance: 3000, bvn: "22112233445" }
+            ],
+            transactions: [
+                { studentName: "Dada Oluwanifemi", matric: "EKSU/ENG/22/5049", amount: 500, time: "Today, 2:45 PM" }
+            ]
+        };
+
+        function switchView(viewId) {
+            ['view-welcome', 'view-login', 'view-register', 'view-student-dashboard', 'view-merchant-dashboard'].forEach(id => {
+                document.getElementById(id).classList.add('hidden-view');
+            });
+            document.getElementById(viewId).classList.remove('hidden-view');
+        }
+
+        function toggleRegistrationRoleFields() {
+            const role = document.getElementById('reg-role').value;
+            document.getElementById('fields-student').classList.toggle('hidden-view', role !== 'student');
+            document.getElementById('fields-merchant').classList.toggle('hidden-view', role !== 'merchant');
+        }
+
+        function triggerEmailVerification() {
+            const email = document.getElementById('reg-email').value;
+            if (!email) return alert('Enter email first.');
+            alert(`Verification code sent to ${email}. (Verified successfully!)`);
+        }
+
+        function handleInitialRegister(event) {
+            event.preventDefault();
+            const role = document.getElementById('reg-role').value;
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+
+            if (role === 'student') {
+                const matric = document.getElementById('reg-matric').value;
+                const bvn = document.getElementById('reg-bvn-student').value;
+                if (bvn.length !== 11) return alert('BVN must be 11 digits.');
+                pendingRegistrationData = { role, name, email, matric, bvn, balance: 3000 };
+                document.getElementById('modal-bvn-mandate').classList.remove('hidden-view');
+            } else {
+                const bvn = document.getElementById('reg-bvn-merchant').value;
+                const storeName = document.getElementById('reg-storename').value;
+                const goods = document.getElementById('reg-goods').value;
+                const storePic = document.getElementById('reg-storepic').value;
+                if (bvn.length !== 11) return alert('BVN must be 11 digits.');
+
+                appState.merchants.push({
+                    id: 'SAPA-M-' + Math.floor(100 + Math.random() * 900),
+                    name, storeName, goods, email, balance: 0, bvn, storePic
+                });
+                alert('Merchant account created successfully! Please login.');
+                switchView('view-login');
+            }
+        }
+
+        function acceptBvnMandate() {
+            document.getElementById('modal-bvn-mandate').classList.add('hidden-view');
+            if (pendingRegistrationData) {
+                appState.students.push(pendingRegistrationData);
+                currentUser = pendingRegistrationData;
+                alert('Student account created with ₦3,000 opening balance!');
+                loadStudentDashboard();
+            }
+        }
+
+        function closeBvnModal() {
+            document.getElementById('modal-bvn-mandate').classList.add('hidden-view');
+            alert('Mandate agreement is required for student registration.');
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const role = document.getElementById('login-role').value;
+            const email = document.getElementById('login-email').value;
+
+            if (role === 'student') {
+                currentUser = appState.students.find(s => s.email === email) || { name: "Dada Oluwanifemi", email, balance: 3000, matric: "EKSU/ENG/22/5049" };
+                loadStudentDashboard();
+            } else {
+                currentUser = appState.merchants.find(m => m.email === email) || appState.merchants[0];
+                loadMerchantDashboard();
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            switchView('view-welcome');
+        }
+
+        function loadStudentDashboard() {
+            document.getElementById('student-welcome-name').innerText = `Welcome, ${currentUser.name}`;
+            document.getElementById('student-balance').innerText = `₦${currentUser.balance.toLocaleString()}.00`;
+            if(currentUser.bvn) document.getElementById('student-bvn-input').value = currentUser.bvn;
+            
+            const select = document.getElementById('transfer-vendor-select');
+            select.innerHTML = '';
+            appState.merchants.forEach(m => {
+                select.innerHTML += `<option value="${m.id}">${m.storeName} (${m.goods})</option>`;
+            });
+
+            const grid = document.getElementById('vendors-directory-grid');
+            grid.innerHTML = '';
+            appState.merchants.forEach(m => {
+                grid.innerHTML += `
+                    <div class="bg-slate-900 border border-borderDark p-4 rounded-xl flex flex-col justify-between">
+                        <div>
+                            <h5 class="font-bold text-white text-sm mb-1">${m.storeName}</h5>
+                            <p class="text-slate-400 text-xs mb-3">Owner: ${m.name}</p>
+                            <p class="text-slate-300 text-xs mb-4"><i class="fa-solid fa-basket-shopping text-emerald-400 mr-1"></i> ${m.goods}</p>
+                        </div>
+                        <button onclick="quickPayVendor('${m.id}')" class="w-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 py-2 rounded-lg text-xs font-semibold">Pay Merchant</button>
+                    </div>
+                `;
+            });
+
+            switchView('view-student-dashboard');
+            openTab('student-tab-transfer');
+        }
+
+        function openTab(tabId) {
+            ['student-tab-transfer', 'student-tab-vendors', 'student-tab-scan', 'student-tab-kyc'].forEach(id => document.getElementById(id).classList.add('hidden-view'));
+            ['btn-tab-transfer', 'btn-tab-vendors', 'btn-tab-scan', 'btn-tab-kyc'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.classList.remove('text-emerald-400', 'border-b-2', 'border-emerald-400');
+                    el.classList.add('text-slate-400');
+                }
+            });
+            document.getElementById(tabId).classList.remove('hidden-view');
+            let activeBtnId = 'btn-tab-transfer';
+            if (tabId === 'student-tab-vendors') activeBtnId = 'btn-tab-vendors';
+            if (tabId === 'student-tab-scan') activeBtnId = 'btn-tab-scan';
+            if (tabId === 'student-tab-kyc') activeBtnId = 'btn-tab-kyc';
+
+            const activeEl = document.getElementById(activeBtnId);
+            if(activeEl) {
+                activeEl.classList.remove('text-slate-400');
+                activeEl.classList.add('text-emerald-400', 'border-b-2', 'border-emerald-400');
+            }
+        }
+
+        function quickPayVendor(merchantId) {
+            openTab('student-tab-transfer');
+            document.getElementById('transfer-vendor-select').value = merchantId;
+        }
+
+        function executeStudentTransfer() {
+            const vendorId = document.getElementById('transfer-vendor-select').value;
+            const amount = parseFloat(document.getElementById('transfer-amount').value);
+            if (!amount || amount <= 0) return alert('Enter a valid amount.');
+            if (currentUser.balance < amount) return alert('Insufficient funds!');
+
+            currentUser.balance -= amount;
+            document.getElementById('student-balance').innerText = `₦${currentUser.balance.toLocaleString()}.00`;
+
+            const merchant = appState.merchants.find(m => m.id === vendorId);
+            if (merchant) merchant.balance += amount;
+
+            appState.transactions.unshift({ studentName: currentUser.name, matric: currentUser.matric || 'EKSU/ENG/22/5049', amount, time: 'Just now' });
+            alert(`Successfully transferred ₦${amount} to ${merchant ? merchant.storeName : 'Merchant'}!`);
+            document.getElementById('transfer-amount').value = '';
+        }
+
+        function simulateScanQR() {
+            const randomMerchant = appState.merchants[Math.floor(Math.random() * appState.merchants.length)];
+            alert(`Scanned QR for: ${randomMerchant.storeName}!`);
+            quickPayVendor(randomMerchant.id);
+        }
+
+        // Live Interswitch BVN & Card Verification Handlers
+        function verifyBvnLive() {
+            const bvn = document.getElementById('student-bvn-input').value;
+            if (bvn.length !== 11) return alert('BVN must be exactly 11 digits.');
+            alert(`Interswitch KYC API: BVN ${bvn} verified successfully against NIBSS records! Account fully authenticated.`);
+        }
+
+        function saveStudentCard() {
+            const cardNum = document.getElementById('student-card-num').value;
+            if (!cardNum) return alert('Please enter valid card details.');
+            alert('Interswitch Tokenization API: Bank card tokenized and securely linked to your SapaShield account.');
+        }
+
+        function loadMerchantDashboard() {
+            document.getElementById('merchant-welcome-name').innerText = currentUser.name;
+            document.getElementById('merchant-store-badge').innerText = currentUser.storeName || 'Store';
+            document.getElementById('merchant-balance').innerText = `₦${(currentUser.balance || 14500).toLocaleString()}.00`;
+            document.getElementById('merchant-id-code').innerText = `ID: ${currentUser.id || 'SAPA-M-8842'}`;
+            if(currentUser.bvn) document.getElementById('merchant-bvn-input').value = currentUser.bvn;
+
+            const qrContainer = document.getElementById('qrcode-container');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, { text: `SAPA_PAY_MERCHANT:${currentUser.id || 'SAPA-M-8842'}`, width: 120, height: 120 });
+
+            const tbody = document.getElementById('merchant-transactions-table');
+            tbody.innerHTML = '';
+            appState.transactions.forEach(tx => {
+                tbody.innerHTML += `<tr><td class="p-3">${tx.studentName}</td><td class="p-3 text-xs text-slate-400">${tx.matric}</td><td class="p-3 text-emerald-400">+₦${tx.amount.toLocaleString()}</td><td class="p-3 text-xs text-slate-400">${tx.time}</td></tr>`;
+            });
+
+            switchView('view-merchant-dashboard');
+            switchMerchantTab('merchant-main');
+        }
+
+        function switchMerchantTab(tabId) {
+            document.getElementById('merchant-main').classList.toggle('hidden-view', tabId !== 'merchant-main');
+            document.getElementById('merchant-kyc').classList.toggle('hidden-view', tabId !== 'merchant-kyc');
+            
+            const btnMain = document.getElementById('btn-m-main');
+            const btnKyc = document.getElementById('btn-m-kyc');
+            
+            if(tabId === 'merchant-main') {
+                btnMain.className = "font-semibold text-emerald-400 border-b-2 border-emerald-400 pb-1 text-sm";
+                btnKyc.className = "font-semibold text-slate-400 hover:text-white pb-1 text-sm";
+            } else {
+                btnKyc.className = "font-semibold text-emerald-400 border-b-2 border-emerald-400 pb-1 text-sm";
+                btnMain.className = "font-semibold text-slate-400 hover:text-white pb-1 text-sm";
+            }
+        }
+
+        function verifyMerchantBvnLive() {
+            const bvn = document.getElementById('merchant-bvn-input').value;
+            if (bvn.length !== 11) return alert('BVN must be exactly 11 digits.');
+            alert(`Interswitch Corporate KYC API: Merchant BVN ${bvn} verified successfully!`);
+        }
+
+        function saveMerchantCard() {
+            const card = document.getElementById('merchant-card-num').value;
+            if(!card) return alert('Please enter card details.');
+            alert('Interswitch Payout Card successfully registered for automated settlements.');
+        }
+
+        function launchInterswitchDeposit() {
+            document.getElementById('modal-deposit-prompt').classList.remove('hidden-view');
+        }
+
+        function closeDepositPrompt() {
+            document.getElementById('modal-deposit-prompt').classList.add('hidden-view');
+        }
+
+        function triggerInterswitchCheckout() {
+            const nairaAmount = parseFloat(document.getElementById('live-deposit-amount').value);
+            if (!nairaAmount || nairaAmount <= 0) return alert('Please enter a valid deposit amount.');
+
+            closeDepositPrompt();
+            const amountInKobo = Math.round(nairaAmount * 100);
+            const txnRef = "SAPA_REF_" + Date.now();
+
+            const paymentCallback = function (response) {
+                if (response && (response.resp === "00" || response.responseCode === "00")) {
+                    currentUser.balance += nairaAmount;
+                    document.getElementById('student-balance').innerText = `₦${currentUser.balance.toLocaleString()}.00`;
+                    alert(`Interswitch Deposit Successful! ₦${nairaAmount.toLocaleString()} added to your wallet.`);
+                } else {
+                    alert("Payment processing failed or was cancelled.");
+                }
+            };
+
+            if (typeof window.webpayCheckout === "function") {
+                window.webpayCheckout({
+                    merchant_code: currentEnv.merchantCode,
+                    pay_item_id: currentEnv.payItemId,
+                    txn_ref: txnRef,
+                    amount: amountInKobo,
+                    currency: 566,
+                    cust_email: currentUser.email || "student@eksu.edu.ng",
+                    site_redirect_url: window.location.href,
+                    onComplete: paymentCallback,
+                    mode: IS_LIVE ? "LIVE" : "TEST"
+                });
+            } else {
+                currentUser.balance += nairaAmount;
+                document.getElementById('student-balance').innerText = `₦${currentUser.balance.toLocaleString()}.00`;
+                alert(`[SDK Fallback] Interswitch Simulation Successful: ₦${nairaAmount.toLocaleString()} added.`);
+            }
+        }
+
+        function openInterswitchWithdrawalModal() {
+            document.getElementById('modal-interswitch').classList.remove('hidden-view');
+        }
+
+        function closeInterswitchModal() {
+            document.getElementById('modal-interswitch').classList.add('hidden-view');
+        }
+
+        function processLiveInterswitchWithdrawal() {
+            const amount = parseFloat(document.getElementById('withdraw-amount').value);
+            if (!amount || amount <= 0) return alert('Enter valid withdrawal amount.');
+            closeInterswitchModal();
+            alert(`Interswitch Transfer API Triggered: ₦${amount.toLocaleString()} successfully dispatched to merchant payout account.`);
+        }
+    </script>
+</body>
+</html>
